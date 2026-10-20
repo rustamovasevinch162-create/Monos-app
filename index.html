@@ -3,161 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monos Live GG Examiner</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <title>Monos Speak - AI Examiner</title>
+    <!-- ResponsiveVoice - Aniq erkak ovozini kafolatlaydigan bulutli motor -->
+    <script src="https://code.responsivevoice.org/responsivevoice.js?key=FREE_KEY"></script>
     <style>
-        * { box-sizing: border-box; }
         body {
-            background-color: #090d16;
-            color: #f8fafc;
-            font-family: 'Segoe UI', Roboto, sans-serif;
-            margin: 0;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: space-between;
-            min-height: 100vh;
-        }
-        .container {
-            width: 100%;
-            max-width: 420px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            flex-grow: 1;
-        }
-        h1 { font-size: 18px; margin: 0; color: #ef4444; text-transform: uppercase; letter-spacing: 1px; text-align: center; }
-        
-        .avatar-container {
-            position: relative;
-            width: 120px;
-            height: 120px;
-            margin: 15px auto;
-        }
-        .avatar {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #ef4444, #7f1d1d);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 60px;
-            box-shadow: 0 0 25px #ef4444;
-            transition: all 0.3s ease;
-        }
-        .talking {
-            animation: talkAnim 0.2s infinite alternate;
-            border: 4px solid #38bdf8;
-            box-shadow: 0 0 35px #38bdf8;
-        }
-        .listening {
-            animation: pulse 1s infinite;
-            border: 4px solid #22c55e;
-            box-shadow: 0 0 35px #22c55e;
-        }
-        @keyframes talkAnim {
-            0% { transform: scale(1); }
-            100% { transform: scale(1.12); }
-        }
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.08); }
-            100% { transform: scale(1); }
-        }
-
-        .status-badge {
-            background: #1f2937;
-            color: #f59e0b;
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: bold;
-            margin-bottom: 10px;
-            border: 1px solid #374151;
+            background-color: #050505;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
             text-align: center;
+            padding: 30px;
         }
-
-        .btn-action {
-            background: linear-gradient(135deg, #22c55e, #15803d);
+        button {
+            background: #cc0000;
             color: white;
             border: none;
-            padding: 16px;
-            border-radius: 14px;
-            font-size: 16px;
+            padding: 20px 30px;
+            font-size: 18px;
             font-weight: bold;
             cursor: pointer;
-            box-shadow: 0 0 20px rgba(34, 197, 94, 0.4);
-            width: 100%;
-            margin-top: 15px;
-            display: none;
+            border-radius: 10px;
+            margin-top: 20px;
         }
-        .btn-start {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
-            box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
-            display: block;
+        #status {
+            font-size: 16px;
+            color: #ffcc00;
+            margin: 20px 0;
         }
-
-        .subtitle-box {
-            width: 100%;
-            background: rgba(17, 24, 39, 0.95);
-            border-radius: 16px;
+        #subText {
+            font-size: 18px;
+            background: #111;
             padding: 15px;
-            border: 1px solid #374151;
-            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.5);
-            margin-top: auto;
+            border-radius: 8px;
+            margin-top: 20px;
+            min-height: 60px;
         }
-        .subtitle-title {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #9ca3af;
-            margin-bottom: 5px;
-        }
-        .subtitle-text {
-            font-size: 15px;
-            line-height: 1.4;
-            color: #f3f4f6;
-            min-height: 40px;
-        }
-        .speaker-tag {
-            font-weight: bold;
-            margin-right: 5px;
-        }
-        .speaker-ai { color: #ef4444; }
-        .speaker-user { color: #22c55e; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>🤬 MONOS GG EXAMINER</h1>
+    <h1>MONOS SPEAK EXAMINER</h1>
+    <div id="status">Tayyormisiz?</div>
 
-        <div class="avatar-container">
-            <div class="avatar" id="avatar">🗿</div>
-        </div>
+    <button id="mainBtn" onclick="startExam()">IMTIHONNI BOSHLASH</button>
 
-        <div class="status-badge" id="statusBadge">Tayyormisiz?</div>
-
-        <button class="btn-action btn-start" id="mainBtn" onclick="startExam()">🔥 IMTIHONNI BOSHLASH</button>
-
-        <div class="subtitle-box" id="subtitleBox" style="display:none;">
-            <div class="subtitle-title">JONLI SUBTITR:</div>
-            <div class="subtitle-text" id="subText">
-                <span class="speaker-tag speaker-ai">AI:</span> Imtihonga xush kelibsiz!
-            </div>
-        </div>
-    </div>
+    <div id="subText">AI: Imtihonga xush kelibsiz!</div>
 
     <script>
-        let tg = window.Telegram.WebApp;
-        tg.expand();
-
-        const avatar = document.getElementById('avatar');
-        const statusBadge = document.getElementById('statusBadge');
+        const statusBadge = document.getElementById('status');
         const mainBtn = document.getElementById('mainBtn');
-        const subtitleBox = document.getElementById('subtitleBox');
         const subText = document.getElementById('subText');
 
         const questions = [
@@ -167,90 +61,54 @@
         ];
         let currentQIndex = 0;
         let recognition = null;
-        let currentAudio = null;
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (SpeechRecognition) {
             recognition = new SpeechRecognition();
-            recognition.lang = 'en-GB'; // Britancha aksent (jiddiyroq erkak ovoziga yaqinroq chiqadi)
+            recognition.lang = 'en-US';
             recognition.interimResults = false;
         }
 
         function startExam() {
             mainBtn.style.display = 'none';
-            subtitleBox.style.display = 'block';
-            
-            let unlockAudio = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=");
-            unlockAudio.play().catch(e => {});
-
+            // ResponsiveVoice motorini faollashtirish
+            if (window.responsiveVoice) {
+                responsiveVoice.speak("", "UK English Male");
+            }
             askQuestion();
         }
 
         function askQuestion() {
             let qText = questions[currentQIndex];
             statusBadge.innerText = "AI Examiner gapirmoqda...";
-            updateSubtitle("AI", qText, "speaker-ai");
+            subText.innerHTML = `<b>AI:</b> ${qText}`;
 
-            // en-GB orqali britancha jiddiy ohangda o'qish
-            playCloudAudio(qText, 'en-GB', () => {
-                enableSpeakButton();
-            });
-        }
-
-        function playCloudAudio(text, lang, callback) {
-            if (currentAudio) {
-                currentAudio.pause();
-                currentAudio = null;
-            }
-
-            avatar.className = "avatar talking";
-            avatar.innerText = "🦹‍♂️"; // Jiddiy erkak avatar emojisi
-
-            // Google TTS da erkak ovozi intonatsiyasini majburlash uchun ba'zi parametrlar qo'shildi
-            let audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=${lang}&client=tw-ob&idx=0&textlen=${text.length}`;
-            currentAudio = new Audio(audioUrl);
-
-            // Ovoz tezligini ozgina sekinlashtirib, dag'alroq qilish mumkin bo'lmasa ham intonatsiyasini jiddiylashtiramiz
-            currentAudio.playbackRate = 0.92; 
-
-            let isDone = false;
-            const finish = () => {
-                if (!isDone) {
-                    isDone = true;
-                    avatar.className = "avatar";
-                    avatar.innerText = "🗿";
-                    if (callback) callback();
+            // UK English Male — Haqiqiy jiddiy Britancha dag'al erkak ovozi
+            responsiveVoice.speak(qText, "UK English Male", {
+                pitch: 0.7, // Ovozni qalinlashtirish uchun
+                rate: 0.95, // Jiddiyroq sekinroq sur'at
+                onend: () => {
+                    enableSpeakButton();
                 }
-            };
-
-            currentAudio.onended = finish;
-            currentAudio.onerror = finish;
-
-            currentAudio.play().catch(e => {
-                setTimeout(finish, 1000);
             });
-
-            setTimeout(finish, Math.max(5000, text.length * 130));
         }
 
         function enableSpeakButton() {
             statusBadge.innerText = "Navbat sizniki. Gapiring!";
             mainBtn.innerText = "🎤 GAPIRISH UCHUN BOSING";
-            mainBtn.style.display = 'block';
+            mainBtn.style.display = 'inline-block';
             mainBtn.onclick = recordUserVoice;
         }
 
         function recordUserVoice() {
             if (!recognition) {
-                alert("Brauzeringiz ovozni qo'llab-quvvatlamaydi!");
+                alert("Brauzeringiz ovozni qo'llab-quvvatlamaydi! Chrome'dan foydalaning.");
                 return;
             }
 
             mainBtn.style.display = 'none';
             statusBadge.innerText = "Sizni eshitayapman... Gapiring!";
-            avatar.className = "avatar listening";
-            avatar.innerText = "👂";
-            updateSubtitle("Siz", "Eshitilyapti...", "speaker-user");
+            subText.innerHTML = `<b>Siz:</b> Eshitilyapti...`;
 
             try {
                 recognition.start();
@@ -258,11 +116,9 @@
 
             recognition.onresult = (event) => {
                 let text = event.results[0][0].transcript;
-                updateSubtitle("Siz", text, "speaker-user");
+                subText.innerHTML = `<b>Siz:</b> ${text}`;
                 
                 statusBadge.innerText = "Tahlil qilinmoqda...";
-                avatar.className = "avatar";
-                avatar.innerText = "🧐";
 
                 setTimeout(() => {
                     analyzeAndRoast(text);
@@ -271,9 +127,7 @@
 
             recognition.onerror = () => {
                 statusBadge.innerText = "Ovoz eshitilmadi. Qayta bosing.";
-                avatar.className = "avatar";
-                avatar.innerText = "❌";
-                mainBtn.style.display = 'block';
+                mainBtn.style.display = 'inline-block';
                 mainBtn.innerText = "🎤 QAYTADAN GAPIRISH";
             };
         }
@@ -287,31 +141,29 @@
 
             if (wordCount < 4) {
                 band = "3.5";
-                roastMsg = "Absolute disaster! Two words? Are you even trying?! This is a pathetic excuse for an IELTS answer. Completely unacceptable!";
+                roastMsg = "Absolute disaster! Two words? Are you even trying?! This is a pathetic excuse for an IELTS answer. Band 3.5!";
             } else if (wordCount < 10) {
                 band = "5.0";
-                roastMsg = "Terrible grammar and zero vocabulary! How do you expect to pass with this primitive school-level English? Wake up!";
+                roastMsg = "Terrible grammar! Zero vocabulary variety! How do you expect to pass with this primitive English? Absolute disappointment!";
             } else {
                 band = "6.5";
-                roastMsg = "You spoke, but it sounds like a broken robot. Zero natural flow and weak structures. Expected much better from you!";
+                roastMsg = "You spoke, but it sounds like a broken robot. Zero natural flow, zero advanced structures. Wake up and try harder!";
             }
 
-            statusBadge.innerText = `Tahlil (Band: ${band})`;
-            avatar.innerText = "🤬";
-            
-            updateSubtitle(`AI GG (Band ${band})`, roastMsg, "speaker-ai");
+            statusBadge.innerText = `Tahlil (Band: ${band}) — Tanqid o'qilmoqda`;
+            subText.innerHTML = `<b>AI GG (Band ${band}):</b> ${roastMsg}`;
 
-            // Britancha jiddiy erkak ovozida o'qish uchun en-GB ishlatamiz
-            playCloudAudio(roastMsg, 'en-GB', () => {
-                currentQIndex = (currentQIndex + 1) % questions.length;
-                setTimeout(() => {
-                    askQuestion();
-                }, 1000);
+            // Ruscha yoki ingliz tilidagi erkak ovozida o'ta qattiqqol tanqidni o'qish
+            responsiveVoice.speak(roastMsg, "UK English Male", {
+                pitch: 0.65,
+                rate: 0.9,
+                onend: () => {
+                    currentQIndex = (currentQIndex + 1) % questions.length;
+                    setTimeout(() => {
+                        askQuestion();
+                    }, 1000);
+                }
             });
-        }
-
-        function updateSubtitle(speaker, text, speakerClass) {
-            subText.innerHTML = `<span class="speaker-tag ${speakerClass}">${speaker}:</span> ${text}`;
         }
     </script>
 </body>
