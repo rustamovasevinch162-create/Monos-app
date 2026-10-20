@@ -29,7 +29,6 @@
         }
         h1 { font-size: 20px; margin: 0; color: #ef4444; text-transform: uppercase; letter-spacing: 1px; text-align: center; }
         
-        /* AI Examiner Kalla */
         .avatar-container {
             position: relative;
             width: 140px;
@@ -94,7 +93,6 @@
             margin-top: 20px;
         }
 
-        /* Subtitrlar bo'limi (Subtitle Box) */
         .subtitle-box {
             width: 100%;
             background: rgba(17, 24, 39, 0.95);
@@ -123,17 +121,6 @@
         }
         .speaker-ai { color: #ef4444; }
         .speaker-user { color: #22c55e; }
-        
-        .score-display {
-            display: inline-block;
-            background: #dc2626;
-            color: white;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-weight: bold;
-            margin-left: 8px;
-            font-size: 12px;
-        }
     </style>
 </head>
 <body>
@@ -145,17 +132,15 @@
             <div class="avatar" id="avatar">🗿</div>
         </div>
 
-        <div class="status-badge" id="statusBadge">Tayyormisiz?</div>
+        <div class="status-badge" id="statusBadge">Tizim tayyorlanmoqda...</div>
 
-        <!-- Boshlash ekrani -->
         <div id="startScreen" style="width:100%;">
             <p style="color:#cbd5e1; font-size:14px; text-align:center;">
                 Jonli, tugmalarsiz va ayovsiz IELTS Speaking suhbatini boshlash uchun bosing:
             </p>
-            <button class="start-btn" onclick="startLiveExam()">🔥 IMTIHONNI BOSHLASH</button>
+            <button class="start-btn" id="startBtn" onclick="startLiveExam()">🔥 IMTIHONNI BOSHLASH</button>
         </div>
 
-        <!-- Subtitr bo'limi -->
         <div class="subtitle-box" id="subtitleBox" style="display:none;">
             <div class="subtitle-title" id="subTitle">JONLI SUBTITR:</div>
             <div class="subtitle-text" id="subText">
@@ -182,38 +167,51 @@
         let currentQIndex = 0;
 
         let synth = window.speechSynthesis;
+        let voices = [];
+
+        // OVOZLARNI YUKLASH VA TAYYORLASH
+        function initVoices() {
+            if ('speechSynthesis' in window) {
+                voices = synth.getVoices();
+                statusBadge.innerText = "Tayyormisiz?";
+            }
+        }
+
+        initVoices();
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = initVoices;
+        }
+
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition = SpeechRecognition ? new SpeechRecognition() : null;
 
         if (recognition) {
             recognition.lang = 'en-US';
-            recognition.interimResults = true; // Jonli subtitr uchun
+            recognition.interimResults = true;
             recognition.continuous = false;
         }
 
-        // 1. Imtihonni Boshlash
         function startLiveExam() {
+            // Tizim ovoz xavfsizligini uyg'otish uchun qisqa jim ovoz berish
+            let dummy = new SpeechSynthesisUtterance("");
+            synth.speak(dummy);
+
             startScreen.style.display = 'none';
             subtitleBox.style.display = 'block';
             
-            // Dastlabki savolni berish
             askQuestion();
         }
 
-        // 2. AI Savol beradi
         function askQuestion() {
             let qText = questions[currentQIndex];
             statusBadge.innerText = "AI Examiner gapirmoqda...";
-            
             updateSubtitle("AI", qText, "speaker-ai");
 
             speakText(qText, 'en-US', () => {
-                // AI gapirib bo'lgach, AVTOMATIK foydalanuvchini eshitishni boshlaydi
                 startListening();
             });
         }
 
-        // 3. Avtomatik Tinglash (Microphone)
         function startListening() {
             if (!recognition) {
                 statusBadge.innerText = "Ovoz yozish qo'llab-quvvatlanmaydi!";
@@ -225,12 +223,15 @@
             avatar.innerText = "👂";
             updateSubtitle("Siz", "Gapiring...", "speaker-user");
 
-            let finalTranscript = '';
+            let hasResult = false;
 
             recognition.start();
 
             recognition.onresult = (event) => {
+                hasResult = true;
                 let interimTranscript = '';
+                let finalTranscript = '';
+
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
                     if (event.results[i].isFinal) {
                         finalTranscript += event.results[i][0].transcript;
@@ -238,39 +239,33 @@
                         interimTranscript += event.results[i][0].transcript;
                     }
                 }
-                // Jonli subtitrda foydalanuvchi gapini ko'rsatish
+                
                 let currentSpeech = finalTranscript || interimTranscript;
                 updateSubtitle("Siz", currentSpeech, "speaker-user");
-            };
 
-            recognition.onspeechend = () => {
-                recognition.stop();
-                statusBadge.innerText = "Tahlil qilinmoqda...";
-                avatar.className = "avatar";
-                avatar.innerText = "🧐";
-            };
+                if (event.results[0].isFinal) {
+                    recognition.stop();
+                    statusBadge.innerText = "Tahlil qilinmoqda...";
+                    avatar.className = "avatar";
+                    avatar.innerText = "🧐";
 
-            recognition.onresult = (event) => {
-                let text = event.results[0][0].transcript;
-                updateSubtitle("Siz", text, "speaker-user");
-                
-                // Gapirib bo'lingach, AVTOMATIK ayovsiz tahlil qilish
-                setTimeout(() => {
-                    analyzeAndRoast(text);
-                }, 800);
+                    setTimeout(() => {
+                        analyzeAndRoast(currentSpeech);
+                    }, 500);
+                }
             };
 
             recognition.onerror = () => {
-                // Tushunmay qolsa avtomatik koyiydi
-                let errorRoast = "Что ты молчишь?! Нормально отвечай!";
-                updateSubtitle("AI (GG)", errorRoast, "speaker-ai");
-                speakText(errorRoast, 'ru-RU', () => {
-                    startListening();
-                });
+                if (!hasResult) {
+                    let errorRoast = "Что ты молчишь?! Нормально отвечай!";
+                    updateSubtitle("AI (GG)", errorRoast, "speaker-ai");
+                    speakText(errorRoast, 'ru-RU', () => {
+                        startListening();
+                    });
+                }
             };
         }
 
-        // 4. Ayovsiz va Shafqatsiz Tahlil (Roast)
         function analyzeAndRoast(text) {
             let words = text.trim().split(/\s+/);
             let wordCount = words.length;
@@ -294,9 +289,7 @@
             
             updateSubtitle(`AI GG (Band ${band})`, roastMsg, "speaker-ai");
 
-            // Qattiq tanqidni baland ovozda aytish
             speakText(roastMsg, 'ru-RU', () => {
-                // Tanqid tugagach, keyingi savolga o'tish yoki qayta tinglash
                 currentQIndex = (currentQIndex + 1) % questions.length;
                 setTimeout(() => {
                     askQuestion();
@@ -304,15 +297,35 @@
             });
         }
 
-        // Universal Ovoz chiqarish
+        // ISHONCHLI OVOZ CHIQARISH
         function speakText(text, lang = 'en-US', callback = null) {
-            if (!('speechSynthesis' in window)) return;
+            if (!('speechSynthesis' in window)) {
+                if (callback) callback();
+                return;
+            }
 
             synth.cancel();
 
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = lang;
-            utterance.rate = 1.0;
+            utterance.rate = 0.95;
+
+            // Mavjud eng yaxshi ovozga ulash
+            if (voices.length > 0) {
+                let matchedVoice = voices.find(v => v.lang.startsWith(lang.slice(0, 2)));
+                if (matchedVoice) utterance.voice = matchedVoice;
+            }
+
+            let isFinished = false;
+
+            const finishHandler = () => {
+                if (!isFinished) {
+                    isFinished = true;
+                    avatar.className = "avatar";
+                    avatar.innerText = "🗿";
+                    if (callback) callback();
+                }
+            };
 
             utterance.onstart = () => {
                 avatar.className = "avatar talking";
@@ -320,21 +333,15 @@
                 else avatar.innerText = "🗣️";
             };
 
-            utterance.onend = () => {
-                avatar.className = "avatar";
-                avatar.innerText = "🗿";
-                if (callback) callback();
-            };
+            utterance.onend = finishHandler;
+            utterance.onerror = finishHandler;
 
-            utterance.onerror = () => {
-                avatar.className = "avatar";
-                if (callback) callback();
-            };
+            // Agar brauzer 7 soniyada ovoz bermasa, qotib qolmasdan avtomatik keyingi qadamga o'tish (Safe Timer)
+            setTimeout(finishHandler, 7000);
 
             synth.speak(utterance);
         }
 
-        // Subtitr matnini yangilash
         function updateSubtitle(speaker, text, speakerClass) {
             subText.innerHTML = `<span class="speaker-tag ${speakerClass}">${speaker}:</span> ${text}`;
         }
