@@ -191,7 +191,7 @@
         let currentQIndex = 0;
         let isPaused = false;
         let isAiSpeaking = true;
-        let activeAudio = null;
+        let accumulatedUserSpeech = ""; // Foydalanuvchining to'liq javobini yig'ib borish uchun
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition = SpeechRecognition ? new SpeechRecognition() : null;
@@ -207,9 +207,12 @@
             subtitleBox.style.display = 'block';
             controlsBox.style.display = 'flex';
 
-            // Ovoz tizimini faollashtirish uchun bo'sh audio chalib yuboramiz
-            let silentAudio = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=");
-            silentAudio.play().catch(e => {});
+            // Ovoz tizimini uyg'otish
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.resume();
+                let dummy = new SpeechSynthesisUtterance(" ");
+                window.speechSynthesis.speak(dummy);
+            }
 
             startPermanentMic();
             askQuestion();
@@ -227,7 +230,7 @@
                 pauseBtn.innerText = "▶️ DAVOM ETTIRISH";
                 pauseBtn.style.background = "#22c55e";
                 statusBadge.innerText = "Suhbat pauzada";
-                if (activeAudio) activeAudio.pause();
+                if ('speechSynthesis' in window) window.speechSynthesis.cancel();
                 avatar.className = "avatar";
                 avatar.innerText = "⏸️";
             }
@@ -239,33 +242,38 @@
             recognition.onresult = (event) => {
                 if (isPaused || isAiSpeaking) return;
 
-                let interimTranscript = '';
-                let finalTranscript = '';
-
+                let currentInterim = '';
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
                     if (event.results[i].isFinal) {
-                        finalTranscript += event.results[i][0].transcript;
+                        accumulatedUserSpeech += " " + event.results[i][0].transcript;
                     } else {
-                        interimTranscript += event.results[i][0].transcript;
+                        currentInterim += event.results[i][0].transcript;
                     }
                 }
 
-                let currentSpeech = finalTranscript || interimTranscript;
-                if (currentSpeech.trim().length > 0) {
-                    updateSubtitle("Siz", currentSpeech, "speaker-user");
-                }
-
-                if (finalTranscript.trim().length > 3) {
-                    isAiSpeaking = true;
-                    statusBadge.innerText = "Tahlil qilinmoqda...";
-                    avatar.className = "avatar";
-                    avatar.innerText = "🧐";
-
-                    analyzeAndRoast(finalTranscript);
+                let displayFullText = accumulatedUserSpeech + " " + currentInterim;
+                if (displayFullText.trim().length > 0) {
+                    updateSubtitle("Siz", displayFullText, "speaker-user");
                 }
             };
 
             recognition.onend = () => {
+                // Agar AI gapirmayotgan bo'lsa va foydalanuvchi gapirib bo'lgan bo'lsa
+                if (!isPaused && !isAiSpeaking) {
+                    if (accumulatedUserSpeech.trim().length > 3) {
+                        let finalAnswer = accumulatedUserSpeech;
+                        accumulatedUserSpeech = ""; // Tozalab qo'yamiz
+                        
+                        isAiSpeaking = true;
+                        statusBadge.innerText = "Tahlil qilinmoqda...";
+                        avatar.className = "avatar";
+                        avatar.innerText = "🧐";
+
+                        analyzeAndRoast(finalAnswer);
+                        return;
+                    }
+                }
+
                 if (!isPaused) {
                     try { recognition.start(); } catch(e) {}
                 }
@@ -280,11 +288,12 @@
             if (isPaused) return;
 
             isAiSpeaking = true;
+            accumulatedUserSpeech = ""; // Yangi savol uchun tozalash
             let qText = questions[currentQIndex];
             statusBadge.innerText = "AI Examiner gapirmoqda...";
             updateSubtitle("AI", qText, "speaker-ai");
 
-            playCloudAudio(qText, 'en', () => {
+            speakText(qText, 'en-US', () => {
                 isAiSpeaking = false;
                 statusBadge.innerText = "Sizni eshitayapman... Gapiring!";
                 avatar.className = "avatar listening";
@@ -318,7 +327,7 @@
             
             updateSubtitle(`AI GG (Band ${band})`, roastMsg, "speaker-ai");
 
-            playCloudAudio(roastMsg, 'ru', () => {
+            speakText(roastMsg, 'ru-RU', () => {
                 currentQIndex = (currentQIndex + 1) % questions.length;
                 setTimeout(() => {
                     askQuestion();
@@ -326,45 +335,42 @@
             });
         }
 
-        // HTML5 AUDIO STREAM (Telegram da 100% ishlaydigan audio oqimi)
-        function playCloudAudio(text, lang, callback) {
+        // QURILMA NATIV OVOZI (SpeechSynthesis) - 100% ishlaydigan va ishonchli usul
+        function speakText(text, lang = 'en-US', callback = null) {
             if (isPaused) return;
 
             isAiSpeaking = true;
             avatar.className = "avatar talking";
-            if (lang === 'ru') avatar.innerText = "🤬";
+            if (lang.startsWith('ru')) avatar.innerText = "🤬";
             else avatar.innerText = "🗣️";
 
-            if (activeAudio) {
-                activeAudio.pause();
-                activeAudio = null;
+            if (!('speechSynthesis' in window)) {
+                if (callback) callback();
+                return;
             }
 
-            // Ochiq va tezkor matndan-ovozga o'girish oqimi
-            let audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=${lang}&client=tw-ob`;
-            
-            activeAudio = new Audio(audioUrl);
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.resume();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = lang;
+            utterance.rate = 0.95;
 
             let isFinished = false;
-            const finish = () => {
+            const finishHandler = () => {
                 if (!isFinished) {
                     isFinished = true;
                     if (callback && !isPaused) callback();
                 }
             };
 
-            activeAudio.onended = finish;
-            activeAudio.onerror = () => {
-                // Agar tarmoqda xatolik bo'lsa ham suhbat to'xtab qolmasligi uchun zaxira taymer
-                setTimeout(finish, 1500);
-            };
+            utterance.onend = finishHandler;
+            utterance.onerror = finishHandler;
 
-            activeAudio.play().catch(e => {
-                setTimeout(finish, 1500);
-            });
+            // Xavfsizlik taymeri (har qanday holatda ham qotib qolmasligini ta'minlaydi)
+            setTimeout(finishHandler, Math.max(4000, text.length * 110));
 
-            // Xavfsizlik taymeri (matn uzunligiga qarab avtomatik o'tish)
-            setTimeout(finish, Math.max(4000, text.length * 120));
+            window.speechSynthesis.speak(utterance);
         }
 
         function updateSubtitle(speaker, text, speakerClass) {
