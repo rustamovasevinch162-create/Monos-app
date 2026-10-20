@@ -3,39 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monos Speaking GG</title>
+    <title>Monos Live GG Examiner</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * { box-sizing: border-box; }
         body {
             background-color: #090d16;
             color: #f8fafc;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', Roboto, sans-serif;
             margin: 0;
             padding: 15px;
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: space-between;
             min-height: 100vh;
         }
-        .card {
-            background: #111827;
-            border-radius: 20px;
-            padding: 20px;
+        .container {
             width: 100%;
             max-width: 420px;
-            box-shadow: 0 0 25px rgba(239, 68, 68, 0.2);
-            border: 2px solid #ef4444;
-            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex-grow: 1;
         }
-        h1 { font-size: 22px; margin: 0; color: #ef4444; text-transform: uppercase; letter-spacing: 1px; }
+        h1 { font-size: 20px; margin: 0; color: #ef4444; text-transform: uppercase; letter-spacing: 1px; text-align: center; }
         
-        /* AI Examiner Kalla / Avatar */
+        /* AI Examiner Kalla */
         .avatar-container {
             position: relative;
-            width: 110px;
-            height: 110px;
-            margin: 15px auto;
+            width: 140px;
+            height: 140px;
+            margin: 20px auto;
         }
         .avatar {
             width: 100%;
@@ -45,145 +44,122 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 55px;
-            box-shadow: 0 0 20px #ef4444;
-            animation: pulse 2s infinite;
+            font-size: 70px;
+            box-shadow: 0 0 25px #ef4444;
+            transition: all 0.3s ease;
         }
         .talking {
-            animation: talk 0.4s infinite alternate;
+            animation: talk 0.25s infinite alternate;
             border: 4px solid #38bdf8;
+            box-shadow: 0 0 35px #38bdf8;
         }
-        @keyframes pulse {
-            0% { transform: scale(1); box-shadow: 0 0 15px #ef4444; }
-            50% { transform: scale(1.05); box-shadow: 0 0 30px #ef4444; }
-            100% { transform: scale(1); box-shadow: 0 0 15px #ef4444; }
+        .listening {
+            animation: listenPulse 1.2s infinite;
+            border: 4px solid #22c55e;
+            box-shadow: 0 0 35px #22c55e;
         }
         @keyframes talk {
             0% { transform: scale(1); }
-            100% { transform: scale(1.1); }
+            100% { transform: scale(1.15); }
+        }
+        @keyframes listenPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+            100% { transform: scale(1); }
         }
 
-        .topic-box {
+        .status-badge {
             background: #1f2937;
-            padding: 15px;
-            border-radius: 12px;
-            border-left: 5px solid #ef4444;
-            margin: 15px 0;
-            text-align: left;
-        }
-        
-        .speak-question-btn {
-            background: #374151;
-            color: #38bdf8;
-            border: 1px solid #38bdf8;
-            padding: 6px 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 12px;
-            margin-top: 8px;
+            color: #f59e0b;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
             font-weight: bold;
+            margin-bottom: 15px;
+            border: 1px solid #374151;
+            text-align: center;
         }
 
-        .mic-btn {
-            background: linear-gradient(135deg, #dc2626, #991b1b);
+        .start-btn {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
             color: white;
             border: none;
-            width: 75px;
-            height: 75px;
-            border-radius: 50%;
-            font-size: 32px;
+            padding: 16px 32px;
+            border-radius: 14px;
+            font-size: 18px;
+            font-weight: bold;
             cursor: pointer;
-            box-shadow: 0 0 20px rgba(220, 38, 38, 0.6);
-            margin: 10px auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .recording {
-            background: #22c55e !important;
-            box-shadow: 0 0 25px #22c55e !important;
-            animation: pulse 1s infinite;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+            width: 100%;
+            margin-top: 20px;
         }
 
-        .status { margin: 10px 0; font-weight: bold; font-size: 13px; color: #f59e0b; }
-
-        .result-box {
-            margin-top: 15px;
-            background: #1f2937;
+        /* Subtitrlar bo'limi (Subtitle Box) */
+        .subtitle-box {
+            width: 100%;
+            background: rgba(17, 24, 39, 0.95);
+            border-radius: 16px;
             padding: 15px;
-            border-radius: 12px;
-            text-align: left;
-            display: none;
             border: 1px solid #374151;
+            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.5);
+            margin-top: auto;
         }
-        .score-badge {
+        .subtitle-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #9ca3af;
+            margin-bottom: 5px;
+        }
+        .subtitle-text {
+            font-size: 15px;
+            line-height: 1.4;
+            color: #f3f4f6;
+            min-height: 45px;
+        }
+        .speaker-tag {
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        .speaker-ai { color: #ef4444; }
+        .speaker-user { color: #22c55e; }
+        
+        .score-display {
+            display: inline-block;
             background: #dc2626;
             color: white;
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 20px;
+            padding: 2px 8px;
+            border-radius: 4px;
             font-weight: bold;
-            display: inline-block;
-        }
-        .rage-text {
-            color: #f87171;
-            font-weight: bold;
-            background: rgba(220, 38, 38, 0.1);
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px dashed #ef4444;
-            margin-top: 8px;
-            font-size: 13px;
-            line-height: 1.4;
-        }
-        .fix-text {
-            color: #4ade80;
-            margin-top: 8px;
-            font-size: 13px;
-            background: rgba(34, 197, 94, 0.1);
-            padding: 8px;
-            border-radius: 8px;
+            margin-left: 8px;
+            font-size: 12px;
         }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h1>🤬 MONOS GG EXAMINER</h1>
-        <p style="color:#94a3b8; font-size:12px; margin-top:3px;">Strict & Toxic IELTS Speaking AI</p>
+    <div class="container">
+        <h1>🤬 MONOS LIVE GG EXAMINER</h1>
 
-        <!-- AI Examiner Avatar (Kalla) -->
         <div class="avatar-container">
             <div class="avatar" id="avatar">🗿</div>
         </div>
 
-        <div class="topic-box">
-            <strong style="color:#ef4444; font-size:12px;">PART 1 QUESTION:</strong>
-            <div id="topic" style="margin-top: 4px; color:#f3f4f6; font-weight: 500;">Describe your hometown. What do you like most about it?</div>
-            <button class="speak-question-btn" onclick="speakQuestion()">🔊 Savolni eshitish</button>
+        <div class="status-badge" id="statusBadge">Tayyormisiz?</div>
+
+        <!-- Boshlash ekrani -->
+        <div id="startScreen" style="width:100%;">
+            <p style="color:#cbd5e1; font-size:14px; text-align:center;">
+                Jonli, tugmalarsiz va ayovsiz IELTS Speaking suhbatini boshlash uchun bosing:
+            </p>
+            <button class="start-btn" onclick="startLiveExam()">🔥 IMTIHONNI BOSHLASH</button>
         </div>
 
-        <button class="mic-btn" id="recordBtn">🎙</button>
-        <div class="status" id="status">Mikrofonni bosing va gapiring!</div>
-
-        <div class="result-box" id="resultBox">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="color:#9ca3af; font-size:13px;">IELTS Score:</span>
-                <span class="score-badge" id="score">0.0</span>
-            </div>
-            
-            <div style="margin-top:10px; font-size:12px; color:#9ca3af;">
-                <strong>Siz aytdingiz:</strong> <i id="userText" style="color:#e5e7eb;">"-"</i>
-            </div>
-
-            <div style="margin-top:12px;">
-                <strong style="color:#ef4444; font-size:13px;">🤬 GG Examiner Tanqidi:</strong>
-                <div class="rage-text" id="feedback">-</div>
-            </div>
-
-            <div class="fix-text" id="correctionBox">
-                <strong>💡 Qanday aytish kerak edi:</strong>
-                <div id="correctionText" style="margin-top:3px;">-</div>
+        <!-- Subtitr bo'limi -->
+        <div class="subtitle-box" id="subtitleBox" style="display:none;">
+            <div class="subtitle-title" id="subTitle">JONLI SUBTITR:</div>
+            <div class="subtitle-text" id="subText">
+                <span class="speaker-tag speaker-ai">AI:</span> Imtihonga xush kelibsiz!
             </div>
         </div>
     </div>
@@ -192,133 +168,176 @@
         let tg = window.Telegram.WebApp;
         tg.expand();
 
-        const recordBtn = document.getElementById('recordBtn');
-        const status = document.getElementById('status');
-        const resultBox = document.getElementById('resultBox');
-        const userText = document.getElementById('userText');
-        const score = document.getElementById('score');
-        const feedback = document.getElementById('feedback');
-        const correctionText = document.getElementById('correctionText');
         const avatar = document.getElementById('avatar');
+        const statusBadge = document.getElementById('statusBadge');
+        const startScreen = document.getElementById('startScreen');
+        const subtitleBox = document.getElementById('subtitleBox');
+        const subText = document.getElementById('subText');
 
-        const currentQuestion = "Describe your hometown. What do you like most about it?";
+        const questions = [
+            "Describe your hometown. What do you like most about it?",
+            "Do you work or are you a student?",
+            "What do you usually do in your free time?"
+        ];
+        let currentQIndex = 0;
 
-        // Savolni ovozli o'qish (AI Kalla gapiradi)
-        function speakQuestion() {
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(currentQuestion);
-                utterance.lang = 'en-US';
-                utterance.rate = 0.9;
-                
-                utterance.onstart = () => {
-                    avatar.classList.add('talking');
-                    avatar.innerText = "🗣️";
-                };
-                utterance.onend = () => {
-                    avatar.classList.remove('talking');
-                    avatar.innerText = "🗿";
-                };
+        let synth = window.speechSynthesis;
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition = SpeechRecognition ? new SpeechRecognition() : null;
 
-                window.speechSynthesis.speak(utterance);
-            }
+        if (recognition) {
+            recognition.lang = 'en-US';
+            recognition.interimResults = true; // Jonli subtitr uchun
+            recognition.continuous = false;
         }
 
-        // Speech Recognition
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        // 1. Imtihonni Boshlash
+        function startLiveExam() {
+            startScreen.style.display = 'none';
+            subtitleBox.style.display = 'block';
+            
+            // Dastlabki savolni berish
+            askQuestion();
+        }
 
-        if (SpeechRecognition) {
-            const recognition = new SpeechRecognition();
-            recognition.lang = 'en-US';
-            recognition.interimResults = false;
+        // 2. AI Savol beradi
+        function askQuestion() {
+            let qText = questions[currentQIndex];
+            statusBadge.innerText = "AI Examiner gapirmoqda...";
+            
+            updateSubtitle("AI", qText, "speaker-ai");
 
-            let isRecording = false;
-
-            recordBtn.addEventListener('click', () => {
-                if (!isRecording) {
-                    try {
-                        recognition.start();
-                        status.innerText = "Eshitayapman... Gapiring!";
-                        recordBtn.classList.add('recording');
-                        avatar.innerText = "👂";
-                        isRecording = true;
-                    } catch(e) {
-                        status.innerText = "Qaytadan bosing!";
-                    }
-                } else {
-                    recognition.stop();
-                    status.innerText = "Tahlil qilinmoqda...";
-                    recordBtn.classList.remove('recording');
-                    avatar.innerText = "🧐";
-                    isRecording = false;
-                }
+            speakText(qText, 'en-US', () => {
+                // AI gapirib bo'lgach, AVTOMATIK foydalanuvchini eshitishni boshlaydi
+                startListening();
             });
+        }
+
+        // 3. Avtomatik Tinglash (Microphone)
+        function startListening() {
+            if (!recognition) {
+                statusBadge.innerText = "Ovoz yozish qo'llab-quvvatlanmaydi!";
+                return;
+            }
+
+            statusBadge.innerText = "Sizni eshitayapman... Gapiring!";
+            avatar.className = "avatar listening";
+            avatar.innerText = "👂";
+            updateSubtitle("Siz", "Gapiring...", "speaker-user");
+
+            let finalTranscript = '';
+
+            recognition.start();
 
             recognition.onresult = (event) => {
-                const text = event.results[0][0].transcript;
-                userText.innerText = `"${text}"`;
-                analyzeSpeech(text);
+                let interimTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+                // Jonli subtitrda foydalanuvchi gapini ko'rsatish
+                let currentSpeech = finalTranscript || interimTranscript;
+                updateSubtitle("Siz", currentSpeech, "speaker-user");
+            };
+
+            recognition.onspeechend = () => {
+                recognition.stop();
+                statusBadge.innerText = "Tahlil qilinmoqda...";
+                avatar.className = "avatar";
+                avatar.innerText = "🧐";
+            };
+
+            recognition.onresult = (event) => {
+                let text = event.results[0][0].transcript;
+                updateSubtitle("Siz", text, "speaker-user");
+                
+                // Gapirib bo'lingach, AVTOMATIK ayovsiz tahlil qilish
+                setTimeout(() => {
+                    analyzeAndRoast(text);
+                }, 800);
             };
 
             recognition.onerror = () => {
-                status.innerText = "Xatolik! Aniqroq va balandroq gapiring.";
-                recordBtn.classList.remove('recording');
-                avatar.innerText = "🗿";
-                isRecording = false;
+                // Tushunmay qolsa avtomatik koyiydi
+                let errorRoast = "Что ты молчишь?! Нормально отвечай!";
+                updateSubtitle("AI (GG)", errorRoast, "speaker-ai");
+                speakText(errorRoast, 'ru-RU', () => {
+                    startListening();
+                });
             };
-
-        } else {
-            status.innerText = "Brauzeringiz ovoz yozishni qo'llab-quvvatlamaydi.";
         }
 
-        // Toxic / GG Style Tahlil
-        function analyzeSpeech(text) {
-            status.innerText = "Tahlil yakunlandi!";
-            resultBox.style.display = "block";
-            avatar.innerText = "🤬";
-
+        // 4. Ayovsiz va Shafqatsiz Tahlil (Roast)
+        function analyzeAndRoast(text) {
             let words = text.trim().split(/\s+/);
             let wordCount = words.length;
 
-            let feedbackMsg = "";
-            let fixMsg = "";
-            let bandScore = "4.0";
+            let roastMsg = "";
+            let band = "4.0";
 
             if (wordCount < 4) {
-                bandScore = "3.5";
-                feedbackMsg = "Что за мусор?! Это даже ne otvet! Siz imtihondamisiz yoki choyxonadami? Kamida 3 ta to'liq gap gapir, leniviy!";
-                fixMsg = "I live in Tashkent, which is the capital city. What I love most about it is the vibrant culture and historic landmarks.";
+                band = "3.5";
+                roastMsg = "Что за мусор?! Это не ответ! Siz imtihondamisiz yoki choyxonadami? Kamida 3 ta gap gapir, leniviy!";
             } else if (wordCount < 10) {
-                bandScore = "5.0";
-                feedbackMsg = "Ujas! Grammatika qani? 'Elementary' darajadagi so'zlar bilan Band 7 olmoqchimisiz? Kakoy pozor! Normalniy linking words ishlat!";
-                fixMsg = "Well, my hometown is quite unique. Particularly, I am fond of its bustling night life and hospitable local people.";
+                band = "5.0";
+                roastMsg = "Ужас! Где грамматика? Elementarni so'zlar bilan Band 7 olmoqchimisiz? Какой позор! Normalniy linking words ishlat!";
             } else {
-                bandScore = "6.5";
-                feedbackMsg = "Nu ladno, bo'ladi... Lekin baribir C1 vocabulary yo'q! Talaffuzda va intonatsiyada robottga o'xshab qolding. Esho luche staraysya!";
-                fixMsg = "My hometown is exceptionally picturesque. What truly fascinates me is the seamless blend of modern architecture and rich heritage.";
+                band = "6.5";
+                roastMsg = "Ну ладно, bo'ladi... Lekin C1 vocabulary yo'q! Robottga o'xshab qolding. Еще лучше старайся!";
             }
 
-            score.innerText = bandScore;
-            feedback.innerText = feedbackMsg;
-            correctionText.innerText = fixMsg;
+            statusBadge.innerText = `Tahlil (Band: ${band})`;
+            avatar.innerText = "🤬";
+            
+            updateSubtitle(`AI GG (Band ${band})`, roastMsg, "speaker-ai");
 
-            // Tanqidni ham AI ovozida o'qib berish (Aralash toxic)
-            speakFeedback(feedbackMsg);
+            // Qattiq tanqidni baland ovozda aytish
+            speakText(roastMsg, 'ru-RU', () => {
+                // Tanqid tugagach, keyingi savolga o'tish yoki qayta tinglash
+                currentQIndex = (currentQIndex + 1) % questions.length;
+                setTimeout(() => {
+                    askQuestion();
+                }, 1000);
+            });
         }
 
-        function speakFeedback(text) {
-            if ('speechSynthesis' in window) {
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'ru-RU'; // Ruscha/O'zbekcha toxic intonatsiya berish uchun
-                utterance.rate = 1.0;
-                utterance.onstart = () => avatar.classList.add('talking');
-                utterance.onend = () => {
-                    avatar.classList.remove('talking');
-                    avatar.innerText = "🤬";
-                };
-                window.speechSynthesis.speak(utterance);
-            }
+        // Universal Ovoz chiqarish
+        function speakText(text, lang = 'en-US', callback = null) {
+            if (!('speechSynthesis' in window)) return;
+
+            synth.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = lang;
+            utterance.rate = 1.0;
+
+            utterance.onstart = () => {
+                avatar.className = "avatar talking";
+                if(lang === 'ru-RU') avatar.innerText = "🤬";
+                else avatar.innerText = "🗣️";
+            };
+
+            utterance.onend = () => {
+                avatar.className = "avatar";
+                avatar.innerText = "🗿";
+                if (callback) callback();
+            };
+
+            utterance.onerror = () => {
+                avatar.className = "avatar";
+                if (callback) callback();
+            };
+
+            synth.speak(utterance);
+        }
+
+        // Subtitr matnini yangilash
+        function updateSubtitle(speaker, text, speakerClass) {
+            subText.innerHTML = `<span class="speaker-tag ${speakerClass}">${speaker}:</span> ${text}`;
         }
     </script>
 </body>
-    </html>
+</html>
