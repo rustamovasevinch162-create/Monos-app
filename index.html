@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monos Live GG Examiner</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://code.responsivevoice.org/responsivevoice.js?key=FREE_KEY"></script>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -191,7 +190,8 @@
         ];
         let currentQIndex = 0;
         let isPaused = false;
-        let isAiSpeaking = true; // Boshida AI gapirayotgani uchun foydalanuvchi ovozi inobatga olinmaydi
+        let isAiSpeaking = true;
+        let activeAudio = null;
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition = SpeechRecognition ? new SpeechRecognition() : null;
@@ -199,7 +199,7 @@
         if (recognition) {
             recognition.lang = 'en-US';
             recognition.interimResults = true;
-            recognition.continuous = true; // Mikrofon doimiy ochiq turadi va qayta ruxsat so'ramaydi
+            recognition.continuous = true;
         }
 
         function startLiveExam() {
@@ -207,13 +207,11 @@
             subtitleBox.style.display = 'block';
             controlsBox.style.display = 'flex';
 
-            if (window.responsiveVoice) {
-                responsiveVoice.speak("", "UK English Male");
-            }
+            // Ovoz tizimini faollashtirish uchun bo'sh audio chalib yuboramiz
+            let silentAudio = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=");
+            silentAudio.play().catch(e => {});
 
-            // Mikrofonni FAQAT BIR MARTA yoqamiz va o'chirmaymiz
             startPermanentMic();
-
             askQuestion();
         }
 
@@ -229,7 +227,7 @@
                 pauseBtn.innerText = "▶️ DAVOM ETTIRISH";
                 pauseBtn.style.background = "#22c55e";
                 statusBadge.innerText = "Suhbat pauzada";
-                if (window.responsiveVoice) responsiveVoice.cancel();
+                if (activeAudio) activeAudio.pause();
                 avatar.className = "avatar";
                 avatar.innerText = "⏸️";
             }
@@ -239,7 +237,6 @@
             if (!recognition) return;
 
             recognition.onresult = (event) => {
-                // Agar AI gapirayotgan bo'lsa yoki pauzada bo'lsa, foydalanuvchi nutqini e'tiborsiz qoldiramiz
                 if (isPaused || isAiSpeaking) return;
 
                 let interimTranscript = '';
@@ -258,9 +255,8 @@
                     updateSubtitle("Siz", currentSpeech, "speaker-user");
                 }
 
-                // Agar foydalanuvchi yetarlicha gapirib bo'lsa
                 if (finalTranscript.trim().length > 3) {
-                    isAiSpeaking = true; // Tahlil paytida mikrofonni bloklaymiz
+                    isAiSpeaking = true;
                     statusBadge.innerText = "Tahlil qilinmoqda...";
                     avatar.className = "avatar";
                     avatar.innerText = "🧐";
@@ -269,7 +265,6 @@
                 }
             };
 
-            // Agar mikrofon o'z-o'zidan yopilib qolsa, ruxsat so'ramasdan darhol fonda qayta yoqamiz
             recognition.onend = () => {
                 if (!isPaused) {
                     try { recognition.start(); } catch(e) {}
@@ -289,8 +284,8 @@
             statusBadge.innerText = "AI Examiner gapirmoqda...";
             updateSubtitle("AI", qText, "speaker-ai");
 
-            speakText(qText, 'en-US', () => {
-                isAiSpeaking = false; // AI gapirib bo'ldi, endi foydalanuvchini eshitishni boshlaymiz
+            playCloudAudio(qText, 'en', () => {
+                isAiSpeaking = false;
                 statusBadge.innerText = "Sizni eshitayapman... Gapiring!";
                 avatar.className = "avatar listening";
                 avatar.innerText = "👂";
@@ -323,7 +318,7 @@
             
             updateSubtitle(`AI GG (Band ${band})`, roastMsg, "speaker-ai");
 
-            speakText(roastMsg, 'ru-RU', () => {
+            playCloudAudio(roastMsg, 'ru', () => {
                 currentQIndex = (currentQIndex + 1) % questions.length;
                 setTimeout(() => {
                     askQuestion();
@@ -331,34 +326,45 @@
             });
         }
 
-        function speakText(text, lang = 'en-US', callback = null) {
+        // HTML5 AUDIO STREAM (Telegram da 100% ishlaydigan audio oqimi)
+        function playCloudAudio(text, lang, callback) {
             if (isPaused) return;
 
             isAiSpeaking = true;
             avatar.className = "avatar talking";
-            if (lang.startsWith('ru')) avatar.innerText = "🤬";
+            if (lang === 'ru') avatar.innerText = "🤬";
             else avatar.innerText = "🗣️";
 
-            let isDone = false;
-            const handleEnd = () => {
-                if (!isDone) {
-                    isDone = true;
+            if (activeAudio) {
+                activeAudio.pause();
+                activeAudio = null;
+            }
+
+            // Ochiq va tezkor matndan-ovozga o'girish oqimi
+            let audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=${lang}&client=tw-ob`;
+            
+            activeAudio = new Audio(audioUrl);
+
+            let isFinished = false;
+            const finish = () => {
+                if (!isFinished) {
+                    isFinished = true;
                     if (callback && !isPaused) callback();
                 }
             };
 
-            if (window.responsiveVoice) {
-                let voiceName = lang.startsWith('ru') ? "Russian Female" : "UK English Male";
-                responsiveVoice.speak(text, voiceName, {
-                    onend: handleEnd,
-                    onerror: handleEnd
-                });
-            } else {
-                handleEnd();
-            }
+            activeAudio.onended = finish;
+            activeAudio.onerror = () => {
+                // Agar tarmoqda xatolik bo'lsa ham suhbat to'xtab qolmasligi uchun zaxira taymer
+                setTimeout(finish, 1500);
+            };
 
-            // Xavfsizlik taymeri
-            setTimeout(handleEnd, Math.max(4000, text.length * 110));
+            activeAudio.play().catch(e => {
+                setTimeout(finish, 1500);
+            });
+
+            // Xavfsizlik taymeri (matn uzunligiga qarab avtomatik o'tish)
+            setTimeout(finish, Math.max(4000, text.length * 120));
         }
 
         function updateSubtitle(speaker, text, speakerClass) {
