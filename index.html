@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monos IELTS Speaking AI</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a2e;
+            color: #ffffff;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+        }
+        .card {
+            background: #16213e;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        .mic-btn {
+            background: #e94560;
+            border: none;
+            border-radius: 50%;
+            width: 90px;
+            height: 90px;
+            font-size: 35px;
+            color: white;
+            cursor: pointer;
+            margin: 20px 0;
+            box-shadow: 0 0 15px #e94560;
+            transition: 0.3s;
+        }
+        .mic-btn:active {
+            transform: scale(0.9);
+        }
+        .feedback {
+            color: #f88f01;
+            font-weight: bold;
+            text-align: left;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>🗣 IELTS Strict AI Examiner</h2>
+    <p>Muallif: Rustamova Sevinch</p>
+
+    <div class="card">
+        <h3>Part 1: Hometown</h3>
+        <p><i>"Where is your hometown and what do you like about it?"</i></p>
+        
+        <button class="mic-btn" id="recordBtn">🎙</button>
+        <p id="status">Tugmani bosing va javob bering...</p>
+    </div>
+
+    <div class="card feedback" id="feedbackCard" style="display:none;">
+        <h4>🔥 AI Examiner Doyrovi (Urishishi):</h4>
+        <p id="aiResponse">..."Sening gapingda 3 ta grammatik xato bor! 'I was go' emas, 'I went' bo'ladi! IELTS 5.5 dan oshmaysan bu ketishda!"...</p>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        const recordBtn = document.getElementById('recordBtn');
+        const status = document.getElementById('status');
+        const feedbackCard = document.getElementById('feedbackCard');
+
+        recordBtn.onclick = () => {
+            status.innerText = "Eshitayapman... Gapiring!";
+            recordBtn.style.background = "#0f3460";
+            
+            setTimeout(() => {
+                status.innerText = "Javobingiz tahlil qilinmoqda...";
+                setTimeout(() => {
+                    feedbackCard.style.display = "block";
+                    status.innerText = "Tahlil tayyor!";
+                    recordBtn.style.background = "#e94560";
+                }, 1500);
+            }, 3000);
+        };
+    </script>
+</body>
+</html>
