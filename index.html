@@ -132,7 +132,7 @@
             <div class="avatar" id="avatar">🗿</div>
         </div>
 
-        <div class="status-badge" id="statusBadge">Tizim tayyorlanmoqda...</div>
+        <div class="status-badge" id="statusBadge">Tayyormisiz?</div>
 
         <div id="startScreen" style="width:100%;">
             <p style="color:#cbd5e1; font-size:14px; text-align:center;">
@@ -167,20 +167,6 @@
         let currentQIndex = 0;
 
         let synth = window.speechSynthesis;
-        let voices = [];
-
-        // OVOZLARNI YUKLASH VA TAYYORLASH
-        function initVoices() {
-            if ('speechSynthesis' in window) {
-                voices = synth.getVoices();
-                statusBadge.innerText = "Tayyormisiz?";
-            }
-        }
-
-        initVoices();
-        if (speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = initVoices;
-        }
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition = SpeechRecognition ? new SpeechRecognition() : null;
@@ -192,9 +178,11 @@
         }
 
         function startLiveExam() {
-            // Tizim ovoz xavfsizligini uyg'otish uchun qisqa jim ovoz berish
-            let dummy = new SpeechSynthesisUtterance("");
-            synth.speak(dummy);
+            // Audio tizimini faollashtirish
+            if ('speechSynthesis' in window) {
+                let dummy = new SpeechSynthesisUtterance("");
+                synth.speak(dummy);
+            }
 
             startScreen.style.display = 'none';
             subtitleBox.style.display = 'block';
@@ -225,7 +213,9 @@
 
             let hasResult = false;
 
-            recognition.start();
+            try {
+                recognition.start();
+            } catch(e) {}
 
             recognition.onresult = (event) => {
                 hasResult = true;
@@ -297,7 +287,6 @@
             });
         }
 
-        // ISHONCHLI OVOZ CHIQARISH
         function speakText(text, lang = 'en-US', callback = null) {
             if (!('speechSynthesis' in window)) {
                 if (callback) callback();
@@ -309,12 +298,6 @@
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = lang;
             utterance.rate = 0.95;
-
-            // Mavjud eng yaxshi ovozga ulash
-            if (voices.length > 0) {
-                let matchedVoice = voices.find(v => v.lang.startsWith(lang.slice(0, 2)));
-                if (matchedVoice) utterance.voice = matchedVoice;
-            }
 
             let isFinished = false;
 
@@ -336,8 +319,8 @@
             utterance.onend = finishHandler;
             utterance.onerror = finishHandler;
 
-            // Agar brauzer 7 soniyada ovoz bermasa, qotib qolmasdan avtomatik keyingi qadamga o'tish (Safe Timer)
-            setTimeout(finishHandler, 7000);
+            // Xavfsizlik Taymeri (3.5 soniyadan keyin qotib qolmasdan darhol davom etadi)
+            setTimeout(finishHandler, 3500);
 
             synth.speak(utterance);
         }
