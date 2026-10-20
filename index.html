@@ -191,37 +191,24 @@
         let currentQIndex = 0;
         let isPaused = false;
         let isAiSpeaking = false;
+        let currentAudio = null;
 
-        let synth = window.speechSynthesis;
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition = SpeechRecognition ? new SpeechRecognition() : null;
 
         if (recognition) {
             recognition.lang = 'en-US';
             recognition.interimResults = true;
-            recognition.continuous = true; // Ruxsatni faqat bir marta so'rashi uchun
+            recognition.continuous = true;
         }
 
         function startLiveExam() {
-            // Audio tizimini uyg'otish
-            unlockAudio();
-
             startScreen.style.display = 'none';
             subtitleBox.style.display = 'block';
             controlsBox.style.display = 'flex';
             
-            // Mikrofonni bir marta yoqib qo'yamiz (har safar ruxsat so'ramasligi uchun)
             initContinuousMic();
-            
             askQuestion();
-        }
-
-        function unlockAudio() {
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.resume();
-                let dummy = new SpeechSynthesisUtterance(" ");
-                synth.speak(dummy);
-            }
         }
 
         function togglePause() {
@@ -236,7 +223,7 @@
                 pauseBtn.innerText = "▶️ DAVOM ETTIRISH";
                 pauseBtn.style.background = "#22c55e";
                 statusBadge.innerText = "Suhbat pauzada";
-                synth.cancel();
+                if (currentAudio) currentAudio.pause();
                 if (recognition) recognition.stop();
                 avatar.className = "avatar";
                 avatar.innerText = "⏸️";
@@ -272,7 +259,7 @@
 
                     setTimeout(() => {
                         analyzeAndRoast(finalTranscript);
-                    }, 1000);
+                    }, 800);
                 }
             };
 
@@ -333,26 +320,33 @@
             
             updateSubtitle(`AI GG (Band ${band})`, roastMsg, "speaker-ai");
 
+            // Ruscha/o'zbekcha tanqidni bulutli ovozda o'qish
             speakText(roastMsg, 'ru-RU', () => {
                 currentQIndex = (currentQIndex + 1) % questions.length;
                 setTimeout(() => {
                     askQuestion();
-                }, 1200);
+                }, 1000);
             });
         }
 
+        // BULUTLI AUDIO OQIMI (Cloud Audio Stream) - Qotmaydi va 100% gapiradi
         function speakText(text, lang = 'en-US', callback = null) {
             if (isPaused) return;
 
             isAiSpeaking = true;
-            synth.cancel();
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
+            }
 
-            // Mobile Chrome/Telegram audio uyg'otish
-            window.speechSynthesis.resume();
+            let tLang = lang.startsWith('ru') ? 'ru' : 'en';
+            let url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=${tLang}&client=tw-ob`;
+            
+            currentAudio = new Audio(url);
 
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = lang;
-            utterance.rate = 0.95;
+            avatar.className = "avatar talking";
+            if(lang === 'ru-RU') avatar.innerText = "🤬";
+            else avatar.innerText = "🗣️";
 
             let isFinished = false;
 
@@ -366,19 +360,15 @@
                 }
             };
 
-            utterance.onstart = () => {
-                avatar.className = "avatar talking";
-                if(lang === 'ru-RU') avatar.innerText = "🤬";
-                else avatar.innerText = "🗣️";
-            };
+            currentAudio.onended = finishHandler;
+            currentAudio.onerror = finishHandler;
 
-            utterance.onend = finishHandler;
-            utterance.onerror = finishHandler;
+            currentAudio.play().catch(e => {
+                finishHandler();
+            });
 
-            // Safe Timer
-            setTimeout(finishHandler, 6000);
-
-            synth.speak(utterance);
+            // Xavfsizlik taymeri (agar audio biroz cho'zilsa yoki tarmoq sekinlashsa ham qotib qolmaydi)
+            setTimeout(finishHandler, 12000);
         }
 
         function updateSubtitle(speaker, text, speakerClass) {
