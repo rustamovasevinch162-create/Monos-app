@@ -31,9 +31,9 @@
         
         .avatar-container {
             position: relative;
-            width: 140px;
-            height: 140px;
-            margin: 20px auto;
+            width: 130px;
+            height: 130px;
+            margin: 15px auto;
         }
         .avatar {
             width: 100%;
@@ -43,7 +43,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 70px;
+            font-size: 65px;
             box-shadow: 0 0 25px #ef4444;
             transition: all 0.3s ease;
         }
@@ -74,12 +74,12 @@
             border-radius: 20px;
             font-size: 13px;
             font-weight: bold;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             border: 1px solid #374151;
             text-align: center;
         }
 
-        .start-btn {
+        .btn-main {
             background: linear-gradient(135deg, #ef4444, #dc2626);
             color: white;
             border: none;
@@ -90,7 +90,25 @@
             cursor: pointer;
             box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
             width: 100%;
-            margin-top: 20px;
+            margin-top: 15px;
+        }
+
+        .control-btns {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        .btn-pause {
+            background: #374151;
+            color: #f8fafc;
+            border: 1px solid #4b5563;
+            padding: 10px;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            flex: 1;
+            font-size: 14px;
         }
 
         .subtitle-box {
@@ -134,15 +152,19 @@
 
         <div class="status-badge" id="statusBadge">Tayyormisiz?</div>
 
+        <div id="controlsBox" style="display:none;" class="control-btns">
+            <button class="btn-pause" id="pauseBtn" onclick="togglePause()">⏸ PAUZA</button>
+        </div>
+
         <div id="startScreen" style="width:100%;">
             <p style="color:#cbd5e1; font-size:14px; text-align:center;">
                 Jonli, tugmalarsiz va ayovsiz IELTS Speaking suhbatini boshlash uchun bosing:
             </p>
-            <button class="start-btn" id="startBtn" onclick="startLiveExam()">🔥 IMTIHONNI BOSHLASH</button>
+            <button class="btn-main" onclick="startLiveExam()">🔥 IMTIHONNI BOSHLASH</button>
         </div>
 
         <div class="subtitle-box" id="subtitleBox" style="display:none;">
-            <div class="subtitle-title" id="subTitle">JONLI SUBTITR:</div>
+            <div class="subtitle-title">JONLI SUBTITR:</div>
             <div class="subtitle-text" id="subText">
                 <span class="speaker-tag speaker-ai">AI:</span> Imtihonga xush kelibsiz!
             </div>
@@ -157,6 +179,8 @@
         const statusBadge = document.getElementById('statusBadge');
         const startScreen = document.getElementById('startScreen');
         const subtitleBox = document.getElementById('subtitleBox');
+        const controlsBox = document.getElementById('controlsBox');
+        const pauseBtn = document.getElementById('pauseBtn');
         const subText = document.getElementById('subText');
 
         const questions = [
@@ -165,60 +189,66 @@
             "What do you usually do in your free time?"
         ];
         let currentQIndex = 0;
+        let isPaused = false;
+        let isAiSpeaking = false;
 
         let synth = window.speechSynthesis;
-
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition = SpeechRecognition ? new SpeechRecognition() : null;
 
         if (recognition) {
             recognition.lang = 'en-US';
             recognition.interimResults = true;
-            recognition.continuous = false;
+            recognition.continuous = true; // Ruxsatni faqat bir marta so'rashi uchun
         }
 
         function startLiveExam() {
-            // Audio tizimini faollashtirish
-            if ('speechSynthesis' in window) {
-                let dummy = new SpeechSynthesisUtterance("");
-                synth.speak(dummy);
-            }
+            // Audio tizimini uyg'otish
+            unlockAudio();
 
             startScreen.style.display = 'none';
             subtitleBox.style.display = 'block';
+            controlsBox.style.display = 'flex';
+            
+            // Mikrofonni bir marta yoqib qo'yamiz (har safar ruxsat so'ramasligi uchun)
+            initContinuousMic();
             
             askQuestion();
         }
 
-        function askQuestion() {
-            let qText = questions[currentQIndex];
-            statusBadge.innerText = "AI Examiner gapirmoqda...";
-            updateSubtitle("AI", qText, "speaker-ai");
-
-            speakText(qText, 'en-US', () => {
-                startListening();
-            });
+        function unlockAudio() {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.resume();
+                let dummy = new SpeechSynthesisUtterance(" ");
+                synth.speak(dummy);
+            }
         }
 
-        function startListening() {
-            if (!recognition) {
-                statusBadge.innerText = "Ovoz yozish qo'llab-quvvatlanmaydi!";
-                return;
+        function togglePause() {
+            if (isPaused) {
+                isPaused = false;
+                pauseBtn.innerText = "⏸ PAUZA";
+                pauseBtn.style.background = "#374151";
+                statusBadge.innerText = "Suhbat davom etmoqda...";
+                askQuestion();
+            } else {
+                isPaused = true;
+                pauseBtn.innerText = "▶️ DAVOM ETTIRISH";
+                pauseBtn.style.background = "#22c55e";
+                statusBadge.innerText = "Suhbat pauzada";
+                synth.cancel();
+                if (recognition) recognition.stop();
+                avatar.className = "avatar";
+                avatar.innerText = "⏸️";
             }
+        }
 
-            statusBadge.innerText = "Sizni eshitayapman... Gapiring!";
-            avatar.className = "avatar listening";
-            avatar.innerText = "👂";
-            updateSubtitle("Siz", "Gapiring...", "speaker-user");
-
-            let hasResult = false;
-
-            try {
-                recognition.start();
-            } catch(e) {}
+        function initContinuousMic() {
+            if (!recognition) return;
 
             recognition.onresult = (event) => {
-                hasResult = true;
+                if (isPaused || isAiSpeaking) return;
+
                 let interimTranscript = '';
                 let finalTranscript = '';
 
@@ -229,34 +259,58 @@
                         interimTranscript += event.results[i][0].transcript;
                     }
                 }
-                
-                let currentSpeech = finalTranscript || interimTranscript;
-                updateSubtitle("Siz", currentSpeech, "speaker-user");
 
-                if (event.results[0].isFinal) {
-                    recognition.stop();
+                let currentSpeech = finalTranscript || interimTranscript;
+                if (currentSpeech.trim().length > 0) {
+                    updateSubtitle("Siz", currentSpeech, "speaker-user");
+                }
+
+                if (finalTranscript.trim().length > 3) {
                     statusBadge.innerText = "Tahlil qilinmoqda...";
                     avatar.className = "avatar";
                     avatar.innerText = "🧐";
 
                     setTimeout(() => {
-                        analyzeAndRoast(currentSpeech);
-                    }, 500);
+                        analyzeAndRoast(finalTranscript);
+                    }, 1000);
                 }
             };
 
             recognition.onerror = () => {
-                if (!hasResult) {
-                    let errorRoast = "Что ты молчишь?! Нормально отвечай!";
-                    updateSubtitle("AI (GG)", errorRoast, "speaker-ai");
-                    speakText(errorRoast, 'ru-RU', () => {
-                        startListening();
-                    });
+                if (!isPaused && !isAiSpeaking) {
+                    try { recognition.start(); } catch(e) {}
                 }
             };
         }
 
+        function askQuestion() {
+            if (isPaused) return;
+
+            let qText = questions[currentQIndex];
+            statusBadge.innerText = "AI Examiner gapirmoqda...";
+            updateSubtitle("AI", qText, "speaker-ai");
+
+            speakText(qText, 'en-US', () => {
+                startListening();
+            });
+        }
+
+        function startListening() {
+            if (isPaused) return;
+
+            statusBadge.innerText = "Sizni eshitayapman... Gapiring!";
+            avatar.className = "avatar listening";
+            avatar.innerText = "👂";
+            updateSubtitle("Siz", "Gapiring...", "speaker-user");
+
+            try {
+                recognition.start();
+            } catch(e) {}
+        }
+
         function analyzeAndRoast(text) {
+            if (isPaused) return;
+
             let words = text.trim().split(/\s+/);
             let wordCount = words.length;
 
@@ -283,17 +337,18 @@
                 currentQIndex = (currentQIndex + 1) % questions.length;
                 setTimeout(() => {
                     askQuestion();
-                }, 1000);
+                }, 1200);
             });
         }
 
         function speakText(text, lang = 'en-US', callback = null) {
-            if (!('speechSynthesis' in window)) {
-                if (callback) callback();
-                return;
-            }
+            if (isPaused) return;
 
+            isAiSpeaking = true;
             synth.cancel();
+
+            // Mobile Chrome/Telegram audio uyg'otish
+            window.speechSynthesis.resume();
 
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = lang;
@@ -304,9 +359,10 @@
             const finishHandler = () => {
                 if (!isFinished) {
                     isFinished = true;
+                    isAiSpeaking = false;
                     avatar.className = "avatar";
                     avatar.innerText = "🗿";
-                    if (callback) callback();
+                    if (callback && !isPaused) callback();
                 }
             };
 
@@ -319,8 +375,8 @@
             utterance.onend = finishHandler;
             utterance.onerror = finishHandler;
 
-            // Xavfsizlik Taymeri (3.5 soniyadan keyin qotib qolmasdan darhol davom etadi)
-            setTimeout(finishHandler, 3500);
+            // Safe Timer
+            setTimeout(finishHandler, 6000);
 
             synth.speak(utterance);
         }
