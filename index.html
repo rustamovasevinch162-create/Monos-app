@@ -191,7 +191,6 @@
         let currentQIndex = 0;
         let isPaused = false;
         let isAiSpeaking = false;
-        let currentAudio = null;
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition = SpeechRecognition ? new SpeechRecognition() : null;
@@ -202,12 +201,21 @@
             recognition.continuous = true;
         }
 
+        // Boshlash tugmasi bosilganda xavfsizlik to'siqlarini yorib o'tamiz
         function startLiveExam() {
             startScreen.style.display = 'none';
             subtitleBox.style.display = 'block';
             controlsBox.style.display = 'flex';
-            
-            initContinuousMic();
+
+            // Audio va Speech Contextni uyg'otish
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.resume();
+            }
+
+            // Mikrofonga ruxsatni bir marta olish va doimiy ushlab turish
+            startMicLoop();
+
+            // Birinchi savol
             askQuestion();
         }
 
@@ -223,17 +231,17 @@
                 pauseBtn.innerText = "▶️ DAVOM ETTIRISH";
                 pauseBtn.style.background = "#22c55e";
                 statusBadge.innerText = "Suhbat pauzada";
-                if (currentAudio) currentAudio.pause();
-                if (recognition) recognition.stop();
+                if ('speechSynthesis' in window) window.speechSynthesis.cancel();
                 avatar.className = "avatar";
                 avatar.innerText = "⏸️";
             }
         }
 
-        function initContinuousMic() {
+        function startMicLoop() {
             if (!recognition) return;
 
             recognition.onresult = (event) => {
+                // Agar pauzada yoki AI gapirayotgan bo'lsa, mikrofon ma'lumotini e'tiborsiz qoldiramiz
                 if (isPaused || isAiSpeaking) return;
 
                 let interimTranscript = '';
@@ -257,17 +265,18 @@
                     avatar.className = "avatar";
                     avatar.innerText = "🧐";
 
-                    setTimeout(() => {
-                        analyzeAndRoast(finalTranscript);
-                    }, 800);
+                    analyzeAndRoast(finalTranscript);
                 }
             };
 
-            recognition.onerror = () => {
-                if (!isPaused && !isAiSpeaking) {
+            recognition.onend = () => {
+                // Uzluksiz ishlashi uchun mikrofoni qayta yoqamiz (so'rov chiqarmaydi)
+                if (!isPaused) {
                     try { recognition.start(); } catch(e) {}
                 }
             };
+
+            try { recognition.start(); } catch(e) {}
         }
 
         function askQuestion() {
@@ -278,21 +287,11 @@
             updateSubtitle("AI", qText, "speaker-ai");
 
             speakText(qText, 'en-US', () => {
-                startListening();
+                statusBadge.innerText = "Sizni eshitayapman... Gapiring!";
+                avatar.className = "avatar listening";
+                avatar.innerText = "👂";
+                updateSubtitle("Siz", "Gapiring...", "speaker-user");
             });
-        }
-
-        function startListening() {
-            if (isPaused) return;
-
-            statusBadge.innerText = "Sizni eshitayapman... Gapiring!";
-            avatar.className = "avatar listening";
-            avatar.innerText = "👂";
-            updateSubtitle("Siz", "Gapiring...", "speaker-user");
-
-            try {
-                recognition.start();
-            } catch(e) {}
         }
 
         function analyzeAndRoast(text) {
@@ -320,7 +319,6 @@
             
             updateSubtitle(`AI GG (Band ${band})`, roastMsg, "speaker-ai");
 
-            // Ruscha/o'zbekcha tanqidni bulutli ovozda o'qish
             speakText(roastMsg, 'ru-RU', () => {
                 currentQIndex = (currentQIndex + 1) % questions.length;
                 setTimeout(() => {
@@ -329,30 +327,34 @@
             });
         }
 
-        // BULUTLI AUDIO OQIMI (Cloud Audio Stream) - Qotmaydi va 100% gapiradi
+        // TIZIM NATIV OVOZI (Telegram WebView xavfsizligi doirasida)
         function speakText(text, lang = 'en-US', callback = null) {
             if (isPaused) return;
 
             isAiSpeaking = true;
-            if (currentAudio) {
-                currentAudio.pause();
-                currentAudio = null;
+
+            if (!('speechSynthesis' in window)) {
+                isAiSpeaking = false;
+                if (callback) callback();
+                return;
             }
 
-            let tLang = lang.startsWith('ru') ? 'ru' : 'en';
-            let url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=${tLang}&client=tw-ob`;
-            
-            currentAudio = new Audio(url);
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.resume();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = lang;
+            utterance.rate = 0.95;
 
             avatar.className = "avatar talking";
             if(lang === 'ru-RU') avatar.innerText = "🤬";
             else avatar.innerText = "🗣️";
 
-            let isFinished = false;
+            let finished = false;
 
-            const finishHandler = () => {
-                if (!isFinished) {
-                    isFinished = true;
+            const onComplete = () => {
+                if (!finished) {
+                    finished = true;
                     isAiSpeaking = false;
                     avatar.className = "avatar";
                     avatar.innerText = "🗿";
@@ -360,15 +362,13 @@
                 }
             };
 
-            currentAudio.onended = finishHandler;
-            currentAudio.onerror = finishHandler;
+            utterance.onend = onComplete;
+            utterance.onerror = onComplete;
 
-            currentAudio.play().catch(e => {
-                finishHandler();
-            });
+            // Agar qurilma ovozni uzoq ushlab tursa, xavfsizlik taymeri
+            setTimeout(onComplete, Math.max(3000, text.length * 100));
 
-            // Xavfsizlik taymeri (agar audio biroz cho'zilsa yoki tarmoq sekinlashsa ham qotib qolmaydi)
-            setTimeout(finishHandler, 12000);
+            window.speechSynthesis.speak(utterance);
         }
 
         function updateSubtitle(speaker, text, speakerClass) {
