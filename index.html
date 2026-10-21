@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shafqatsiz IELTS Speacking Trainer</title>
+    <title>IELTS Speaking Trainer</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -50,6 +50,14 @@
             color: white;
             align-self: flex-start;
         }
+        .error-msg {
+            background: #4a1515;
+            color: #ff8a80;
+            border: 1px solid #ff5252;
+            align-self: center;
+            width: 90%;
+            text-align: center;
+        }
         .input-area {
             display: flex;
             gap: 5px;
@@ -74,9 +82,6 @@
             font-weight: bold;
             cursor: pointer;
         }
-        button:active {
-            background: #b71c1c;
-        }
     </style>
 </head>
 <body>
@@ -93,10 +98,10 @@
     </div>
 
     <script>
-        // API kalitingni shu yerga qo'yasan
+        // PASTDAGI QO‘SHTIRNOQ ICHIGA GROQ API KALITINGNI YOZASAN:
         const apiKey = "BURAGA_GROQ_API_KALITINGNI_YOZ"; 
 
-        const systemPrompt = "Sen juda qattiqqo'l, shafqatsiz va talabchan IELTS imtihonchisisan. Foydalanuvchi ingliz tilida yoki o'zbek tilida gapirsa ham, unga faqat O'ZBEK tilida, kerak bo'lsa ruscha qo'polroq so'zlar va jargonglarni (masalan: 'blin', 'brat', 'kak by', 'prostoy') aralashtirib, uning xatolarini va qanday ahmoqona gapirganini ayovsiz yuziga to'g'ri aytib tursan. Qattiq tanqid qil.";
+        const systemPrompt = "Sen juda qattiqqo'l, shafqatsiz va talabchan IELTS imtihonchisisan. Foydalanuvchi ingliz tilida yoki o'zbek tilida gapirsa ham, unga faqat O'ZBEK tilida, kerak bo'lsa ruscha qo'polroq so'zlar va jargonglarni aralashtirib, uning xatolarini va qanday gapirganini ayovsiz yuziga to'g'ri aytib tursan. Qattiq tanqid qil.";
 
         let chatHistory = [
             { role: "system", content: systemPrompt },
@@ -109,6 +114,10 @@
             const text = inputField.value.trim();
 
             if (!text) return;
+            if (apiKey === "BURAGA_GROQ_API_KALITINGNI_YOZ" || !apiKey) {
+                chatContainer.innerHTML += `<div class="message error-msg">⚠️ Avval kod ichiga o'zining Groq API kalitingni yozishing kerak!</div>`;
+                return;
+            }
 
             // Foydalanuvchi xabarini chiqarish
             chatContainer.innerHTML += `<div class="message user">${text}</div>`;
@@ -125,7 +134,7 @@
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        model: "llama-3.3-70b-versatile",
+                        model: "llama-3.1-8b-instant",
                         messages: chatHistory,
                         temperature: 0.8
                     })
@@ -133,29 +142,29 @@
 
                 const data = await response.json();
                 
-                if (data.choices && data.choices.length > 0) {
+                if (response.ok && data.choices && data.choices.length > 0) {
                     const aiReply = data.choices[0].message.content;
                     chatContainer.innerHTML += `<div class="message ai">${aiReply}</div>`;
                     chatContainer.scrollTop = chatContainer.scrollHeight;
 
                     chatHistory.push({ role: "assistant", content: aiReply });
-
-                    // Matnni ovoz chiqarib o'qish funksiyasi (Text-to-Speech)
                     speakText(aiReply);
                 } else {
-                    chatContainer.innerHTML += `<div class="message ai">Serverdan xatolik keldi, brat! Kalitni tekshir.</div>`;
+                    // Aniq xatoni ekranga chiqarish
+                    const errMessage = data.error ? data.error.message : "Noma'lum xatolik";
+                    chatContainer.innerHTML += `<div class="message error-msg">❌ Xato: ${errMessage}</div>`;
                 }
 
             } catch (error) {
-                chatContainer.innerHTML += `<div class="message ai">Internet yoki ulanishda xatolik chiqdi!</div>`;
+                chatContainer.innerHTML += `<div class="message error-msg">❌ Tarmoq xatosi: ${error.message}</div>`;
             }
+            chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
-        // Brauzerning o'zi o'qib berishi uchun funksiya
         function speakText(text) {
             if ('speechSynthesis' in window) {
                 const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'uz-UZ'; // O'zbek tilida o'qishga harakat qiladi
+                utterance.lang = 'uz-UZ';
                 window.speechSynthesis.speak(utterance);
             }
         }
