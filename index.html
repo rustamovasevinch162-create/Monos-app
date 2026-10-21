@@ -3,185 +3,161 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monos Speak - AI Examiner</title>
+    <title>Shafqatsiz IELTS Speacking Trainer</title>
     <style>
         body {
-            background-color: #050505;
-            color: #ffffff;
             font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            height: 95vh;
+        }
+        h2 {
             text-align: center;
-            padding: 30px;
+            color: #ff5252;
+            margin: 5px 0;
+            font-size: 1.2rem;
+        }
+        #chat-container {
+            flex: 1;
+            border: 1px solid #333;
+            background: #1e1e1e;
+            border-radius: 8px;
+            padding: 10px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .message {
+            padding: 10px;
+            border-radius: 6px;
+            max-width: 85%;
+            word-wrap: break-word;
+            font-size: 0.95rem;
+        }
+        .user {
+            background: #0d47a1;
+            color: white;
+            align-self: flex-end;
+        }
+        .ai {
+            background: #b71c1c;
+            color: white;
+            align-self: flex-start;
+        }
+        .input-area {
+            display: flex;
+            gap: 5px;
+        }
+        textarea {
+            flex: 1;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #444;
+            background: #222;
+            color: white;
+            resize: none;
+            height: 45px;
+            font-size: 1rem;
         }
         button {
-            background: #cc0000;
+            padding: 10px 15px;
+            background: #d32f2f;
             color: white;
             border: none;
-            padding: 20px 30px;
-            font-size: 18px;
+            border-radius: 6px;
             font-weight: bold;
             cursor: pointer;
-            border-radius: 10px;
-            margin-top: 20px;
         }
-        #status {
-            font-size: 16px;
-            color: #ffcc00;
-            margin: 20px 0;
-        }
-        #subText {
-            font-size: 18px;
-            background: #111;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 20px;
-            min-height: 60px;
+        button:active {
+            background: #b71c1c;
         }
     </style>
 </head>
 <body>
 
-    <h1>MONOS SPEAK EXAMINER</h1>
-    <div id="status">Tayyormisiz?</div>
+    <h2>🔥 Shafqatsiz IELTS Examiner</h2>
+    
+    <div id="chat-container">
+        <div class="message ai">Xo‘sh, nima demoqchisan? Savolga tezroq javob ber, vaqtni o‘g‘irlama! Gapirchi, eshitaman.</div>
+    </div>
 
-    <button id="mainBtn" onclick="startExam()">IMTIHONNI BOSHLASH</button>
-
-    <div id="subText">AI: Imtihonga xush kelibsiz!</div>
+    <div class="input-area">
+        <textarea id="user-input" placeholder="Javobingni yoz..."></textarea>
+        <button onclick="sendMessage()">Yuborish</button>
+    </div>
 
     <script>
-        const statusBadge = document.getElementById('status');
-        const mainBtn = document.getElementById('mainBtn');
-        const subText = document.getElementById('subText');
+        // API kalitingni shu yerga qo'yasan
+        const apiKey = "BURAGA_GROQ_API_KALITINGNI_YOZ"; 
 
-        const questions = [
-            "Describe your hometown. What do you like most about it?",
-            "Do you work or are you a student?",
-            "What do you usually do in your free time?"
+        const systemPrompt = "Sen juda qattiqqo'l, shafqatsiz va talabchan IELTS imtihonchisisan. Foydalanuvchi ingliz tilida yoki o'zbek tilida gapirsa ham, unga faqat O'ZBEK tilida, kerak bo'lsa ruscha qo'polroq so'zlar va jargonglarni (masalan: 'blin', 'brat', 'kak by', 'prostoy') aralashtirib, uning xatolarini va qanday ahmoqona gapirganini ayovsiz yuziga to'g'ri aytib tursan. Qattiq tanqid qil.";
+
+        let chatHistory = [
+            { role: "system", content: systemPrompt },
+            { role: "assistant", content: "Xo‘sh, nima demoqchisan? Savolga tezroq javob ber, vaqtni o‘g‘irlama! Gapirchi, eshitaman." }
         ];
-        let currentQIndex = 0;
-        let recognition = null;
-        let currentAudio = null;
 
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (SpeechRecognition) {
-            recognition = new SpeechRecognition();
-            recognition.lang = 'en-US';
-            recognition.interimResults = false;
-        }
+        async function sendMessage() {
+            const inputField = document.getElementById("user-input");
+            const chatContainer = document.getElementById("chat-container");
+            const text = inputField.value.trim();
 
-        function startExam() {
-            mainBtn.style.display = 'none';
-            
-            // Ovozni blokdan chiqarish uchun bo'sh audio
-            let dummy = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=");
-            dummy.play().catch(e => {});
+            if (!text) return;
 
-            askQuestion();
-        }
+            // Foydalanuvchi xabarini chiqarish
+            chatContainer.innerHTML += `<div class="message user">${text}</div>`;
+            inputField.value = "";
+            chatContainer.scrollTop = chatContainer.scrollHeight;
 
-        function askQuestion() {
-            let qText = questions[currentQIndex];
-            statusBadge.innerText = "AI Examiner gapirmoqda...";
-            subText.innerHTML = `<b>AI:</b> ${qText}`;
-
-            playBrianVoice(qText, () => {
-                enableSpeakButton();
-            });
-        }
-
-        // BARCHA QURILMALARDA BIR XIL ISHLaydigan JIDDIY ERKAK OVOZI (Brian)
-        function playBrianVoice(text, callback) {
-            if (currentAudio) {
-                currentAudio.pause();
-                currentAudio = null;
-            }
-
-            // Bepul va ishonchli audio oqimi
-            let url = `https://api.streamelements.com/kappa/v2/speech?voice=Brian&text=${encodeURIComponent(text)}`;
-            currentAudio = new Audio(url);
-
-            let isDone = false;
-            const finish = () => {
-                if (!isDone) {
-                    isDone = true;
-                    if (callback) callback();
-                }
-            };
-
-            currentAudio.onended = finish;
-            currentAudio.onerror = finish;
-
-            currentAudio.play().catch(e => {
-                setTimeout(finish, 2000);
-            });
-        }
-
-        function enableSpeakButton() {
-            statusBadge.innerText = "Navbat sizniki. Gapiring!";
-            mainBtn.innerText = "🎤 GAPIRISH UCHUN BOSING";
-            mainBtn.style.display = 'inline-block';
-            mainBtn.onclick = recordUserVoice;
-        }
-
-        function recordUserVoice() {
-            if (!recognition) {
-                alert("Brauzeringiz ovozni qo'llab-quvvatlamaydi! Chrome'dan foydalaning.");
-                return;
-            }
-
-            mainBtn.style.display = 'none';
-            statusBadge.innerText = "Sizni eshitayapman... Gapiring!";
-            subText.innerHTML = `<b>Siz:</b> Eshitilyapti...`;
+            chatHistory.push({ role: "user", content: text });
 
             try {
-                recognition.start();
-            } catch(e) {}
+                const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${apiKey}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        model: "llama-3.3-70b-versatile",
+                        messages: chatHistory,
+                        temperature: 0.8
+                    })
+                });
 
-            recognition.onresult = (event) => {
-                let text = event.results[0][0].transcript;
-                subText.innerHTML = `<b>Siz:</b> ${text}`;
+                const data = await response.json();
                 
-                statusBadge.innerText = "Tahlil qilinmoqda...";
+                if (data.choices && data.choices.length > 0) {
+                    const aiReply = data.choices[0].message.content;
+                    chatContainer.innerHTML += `<div class="message ai">${aiReply}</div>`;
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
 
-                setTimeout(() => {
-                    analyzeAndRoast(text);
-                }, 800);
-            };
+                    chatHistory.push({ role: "assistant", content: aiReply });
 
-            recognition.onerror = () => {
-                statusBadge.innerText = "Ovoz eshitilmادی. Qayta bosing.";
-                mainBtn.style.display = 'inline-block';
-                mainBtn.innerText = "🎤 QAYTADAN GAPIRISH";
-            };
+                    // Matnni ovoz chiqarib o'qish funksiyasi (Text-to-Speech)
+                    speakText(aiReply);
+                } else {
+                    chatContainer.innerHTML += `<div class="message ai">Serverdan xatolik keldi, brat! Kalitni tekshir.</div>`;
+                }
+
+            } catch (error) {
+                chatContainer.innerHTML += `<div class="message ai">Internet yoki ulanishda xatolik chiqdi!</div>`;
+            }
         }
 
-        function analyzeAndRoast(text) {
-            let words = text.trim().split(/\s+/);
-            let wordCount = words.length;
-
-            let roastMsg = "";
-            let band = "4.0";
-
-            if (wordCount < 4) {
-                band = "3.5";
-                roastMsg = "Absolute disaster! Two words? Are you even trying?! This is a pathetic excuse for an IELTS answer. Band 3.5!";
-            } else if (wordCount < 10) {
-                band = "5.0";
-                roastMsg = "Terrible grammar! Zero vocabulary variety! How do you expect to pass with this primitive English? Absolute disappointment!";
-            } else {
-                band = "6.5";
-                roastMsg = "You spoke, but it sounds like a broken robot. Zero natural flow, zero advanced structures. Wake up and try harder!";
+        // Brauzerning o'zi o'qib berishi uchun funksiya
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'uz-UZ'; // O'zbek tilida o'qishga harakat qiladi
+                window.speechSynthesis.speak(utterance);
             }
-
-            statusBadge.innerText = `Tahlil (Band: ${band}) — Tanqid o'qilmoqda`;
-            subText.innerHTML = `<b>AI GG (Band ${band}):</b> ${roastMsg}`;
-
-            // Shavqatsiz tanqidni o'sha qalin erkak ovozida o'qish
-            playBrianVoice(roastMsg, () => {
-                currentQIndex = (currentQIndex + 1) % questions.length;
-                setTimeout(() => {
-                    askQuestion();
-                }, 1000);
-            });
         }
     </script>
 </body>
