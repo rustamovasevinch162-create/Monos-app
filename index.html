@@ -98,8 +98,8 @@
     </div>
 
     <script>
-        // PASTDAGI QO‘SHTIRNOQ ICHIGA GROQ API KALITINGNI YOZASAN:
-        const apiKey = "BURAGA_GROQ_API_KALITINGNI_YOZ"; 
+        // Kalitingiz tayyor kiritildi
+        const apiKey = "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"; 
 
         const systemPrompt = "Sen juda qattiqqo'l, shafqatsiz va talabchan IELTS imtihonchisisan. Foydalanuvchi ingliz tilida yoki o'zbek tilida gapirsa ham, unga faqat O'ZBEK tilida, kerak bo'lsa ruscha qo'polroq so'zlar va jargonglarni aralashtirib, uning xatolarini va qanday gapirganini ayovsiz yuziga to'g'ri aytib tursan. Qattiq tanqid qil.";
 
@@ -114,10 +114,6 @@
             const text = inputField.value.trim();
 
             if (!text) return;
-            if (apiKey === "BURAGA_GROQ_API_KALITINGNI_YOZ" || !apiKey) {
-                chatContainer.innerHTML += `<div class="message error-msg">⚠️ Avval kod ichiga o'zining Groq API kalitingni yozishing kerak!</div>`;
-                return;
-            }
 
             // Foydalanuvchi xabarini chiqarish
             chatContainer.innerHTML += `<div class="message user">${text}</div>`;
@@ -150,7 +146,6 @@
                     chatHistory.push({ role: "assistant", content: aiReply });
                     speakText(aiReply);
                 } else {
-                    // Aniq xatoni ekranga chiqarish
                     const errMessage = data.error ? data.error.message : "Noma'lum xatolik";
                     chatContainer.innerHTML += `<div class="message error-msg">❌ Xato: ${errMessage}</div>`;
                 }
