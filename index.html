@@ -89,7 +89,7 @@
     <h2>🔥 Shafqatsiz IELTS Examiner</h2>
     
     <div id="chat-container">
-        <div class="message ai">Xo‘sh, nima demoqchisan? Savolga tezroq javob ber, vaqtni o‘g‘irlama! Gapirchi, eshitaman.</div>
+        <div class="message ai">Xo‘sh, nima demoqchisan? Savolga tezroq javob ber, katta xolangni uyida emassan! Gapirchi, eshitaman lapashang.</div>
     </div>
 
     <div class="input-area">
@@ -98,7 +98,6 @@
     </div>
 
     <script>
-        // Kalitingiz tayyor kiritildi
         const apiKey = "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"; 
 
         const systemPrompt = "Sen juda qattiqqo'l, shafqatsiz va talabchan IELTS imtihonchisisan. Foydalanuvchi ingliz tilida yoki o'zbek tilida gapirsa ham, unga faqat O'ZBEK tilida, kerak bo'lsa ruscha qo'polroq so'zlar va jargonglarni aralashtirib, uning xatolarini va qanday gapirganini ayovsiz yuziga to'g'ri aytib tursan. Qattiq tanqid qil.";
@@ -115,7 +114,6 @@
 
             if (!text) return;
 
-            // Foydalanuvchi xabarini chiqarish
             chatContainer.innerHTML += `<div class="message user">${text}</div>`;
             inputField.value = "";
             chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -130,7 +128,7 @@
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        model: "llama-3.1-8b-instant",
+                        model: "llama-3.3-70b-versatile",
                         messages: chatHistory,
                         temperature: 0.8
                     })
