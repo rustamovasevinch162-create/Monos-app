@@ -89,7 +89,7 @@
     <h2>🔥 Shafqatsiz IELTS Examiner</h2>
     
     <div id="chat-container">
-        <div class="message ai">Xo‘sh, nima demoqchisan? Savolga tezroq javob ber, senga bu oʻz uying emas! Gapirchi, eshitaman.</div>
+        <div class="message ai">Xo‘sh, nima demoqchisan? Savolga tezroq javob ber, vaqtni o‘g‘irlama! Gapirchi, eshitaman.</div>
     </div>
 
     <div class="input-area">
@@ -125,11 +125,10 @@
                     method: "POST",
                     headers: {
                         "Authorization": `Bearer ${apiKey}`,
-                        "Content-Type": "authorization/json",
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        model: "llama3-8b-8192",
+                        model: "llama3-70b-8192",
                         messages: chatHistory,
                         temperature: 0.8
                     })
